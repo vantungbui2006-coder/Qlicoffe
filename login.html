@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập - Coffee Order</title>
+<style>
+  :root { --brown:#6b4423; --brown-dark:#4a2f18; --cream:#f7ede1; --accent:#c9822f; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(160deg, var(--cream), #fff);
+    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+  }
+  .card {
+    background: #fff; padding: 40px 36px; border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(107,68,35,0.15); width: 360px;
+  }
+  .logo { text-align: center; margin-bottom: 8px; font-size: 40px; }
+  h1 { text-align: center; color: var(--brown-dark); font-size: 22px; margin: 0 0 4px; }
+  p.sub { text-align: center; color: #8a7565; font-size: 13px; margin: 0 0 24px; }
+  label { font-size: 13px; color: var(--brown-dark); font-weight: 600; display: block; margin: 14px 0 6px; }
+  input {
+    width: 100%; padding: 11px 12px; border: 1.5px solid #e6d7c5; border-radius: 8px;
+    font-size: 14px; outline: none; transition: border .15s;
+  }
+  input:focus { border-color: var(--accent); }
+  button {
+    width: 100%; margin-top: 22px; padding: 12px; border: none; border-radius: 8px;
+    background: var(--brown); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+  }
+  button:hover { background: var(--brown-dark); }
+  .error { color: #c0392b; font-size: 13px; text-align: center; margin-top: 12px; min-height: 16px; }
+  .hint { margin-top: 20px; padding: 12px; background: #fbf3ea; border-radius: 8px; font-size: 12px; color: #8a7565; line-height: 1.6; }
+  .hint b { color: var(--brown-dark); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">☕</div>
+    <h1>COFFEE ORDER</h1>
+    <p class="sub">Đăng nhập hệ thống nội bộ</p>
+
+    <form id="loginForm">
+      <label>Tài khoản</label>
+      <input type="text" id="username" placeholder="Nhập tên đăng nhập" autocomplete="username" required>
+      <label>Mật khẩu</label>
+      <input type="password" id="password" placeholder="Nhập mật khẩu" autocomplete="current-password" required>
+      <button type="submit">Đăng nhập</button>
+      <div class="error" id="errorMsg"></div>
+    </form>
+
+    <div class="hint">
+      <b>Tài khoản demo:</b><br>
+      Thu ngân: <b>thungan</b> / <b>123456</b><br>
+      Pha chế: <b>phache</b> / <b>123456</b>
+    </div>
+  </div>
+
+<script src="mock-data.js"></script>
+<script>
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value;
+    const acc = login(u, p);
+    const errorMsg = document.getElementById('errorMsg');
+    if (!acc) {
+      errorMsg.textContent = 'Sai tài khoản hoặc mật khẩu.';
+      return;
+    }
+    errorMsg.textContent = '';
+    window.location.href = acc.role === 'cashier' ? 'cashier.html' : 'barista.html';
+  });
+
+  // Nếu đã đăng nhập rồi thì tự chuyển thẳng vào trang tương ứng
+  (function(){
+    const s = getSession();
+    if (s) window.location.href = s.role === 'cashier' ? 'cashier.html' : 'barista.html';
+  })();
+</script>
+</body>
+</html>

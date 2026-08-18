@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thu Ngân - Coffee Order</title>
+<style>
+  :root {
+    --brown:#6b4423; --brown-dark:#4a2f18; --cream:#f7ede1; --accent:#c9822f;
+    --orange:#e67e22; --blue:#2980b9; --green:#27ae60; --purple:#8e44ad; --border:#e6d7c5;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Segoe UI',Roboto,sans-serif; background:var(--cream); color:var(--brown-dark); }
+  header {
+    background:#fff; border-bottom:1px solid var(--border); padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:20;
+  }
+  header .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
+  header .brand span.logo { font-size:24px; }
+  nav { display:flex; gap:6px; }
+  nav button {
+    background:none; border:none; padding:9px 16px; border-radius:8px; cursor:pointer;
+    font-size:14px; color:#8a7565; font-weight:600;
+  }
+  nav button.active { background:var(--brown); color:#fff; }
+  .user-box { display:flex; align-items:center; gap:10px; font-size:13px; color:#8a7565; }
+  .user-box button { background:none; border:1px solid var(--border); border-radius:6px; padding:6px 12px; cursor:pointer; color:var(--brown-dark); }
+  main { padding:24px; max-width:1200px; margin:0 auto; }
+  .view { display:none; }
+  .view.active { display:block; }
+
+  /* Dashboard */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card { background:#fff; border-radius:12px; padding:18px 20px; border:1px solid var(--border); }
+  .stat-card .label { font-size:13px; color:#8a7565; margin-bottom:6px; }
+  .stat-card .value { font-size:28px; font-weight:700; }
+  .stat-card.orange .value { color:var(--orange); }
+  .stat-card.blue .value { color:var(--blue); }
+  .stat-card.green .value { color:var(--green); }
+  .stat-card.purple .value { color:var(--purple); }
+
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
+  thead th { background:#faf4ec; text-align:left; padding:12px 14px; font-size:13px; color:#8a7565; border-bottom:1px solid var(--border); }
+  tbody td { padding:12px 14px; font-size:14px; border-bottom:1px solid #f1e6d8; }
+  tbody tr:last-child td { border-bottom:none; }
+  .card-box { background:#fff; border-radius:12px; border:1px solid var(--border); overflow:hidden; }
+  .card-head { padding:16px 18px; font-weight:700; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+
+  .badge { padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .badge.cho_xac_nhan { background:#fdecd3; color:var(--orange); }
+  .badge.da_xac_nhan { background:#dceeff; color:var(--blue); }
+  .badge.cho_thanh_toan { background:#dceeff; color:var(--blue); }
+  .badge.da_thanh_toan { background:#dcf5e4; color:var(--green); }
+  .badge.chuyen_bep { background:#eeddf7; color:var(--purple); }
+  .badge.dang_pha_che { background:#fdecd3; color:var(--orange); }
+  .badge.hoan_thanh { background:#dcf5e4; color:var(--green); }
+
+  /* Order list toolbar */
+  .toolbar { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .toolbar input, .toolbar select {
+    padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; outline:none;
+  }
+  .toolbar input { flex:1; min-width:200px; }
+
+  .btn { border:none; border-radius:6px; padding:7px 12px; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn.ghost { background:#fff; border:1px solid var(--border); color:var(--brown-dark); }
+  .btn.primary { background:var(--orange); color:#fff; }
+  .btn.blue { background:var(--blue); color:#fff; }
+  .btn:disabled { opacity:.35; cursor:not-allowed; }
+
+  /* Modal chi tiết đơn hàng */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:50; align-items:flex-start; justify-content:center; overflow:auto; padding:40px 16px; }
+  .overlay.active { display:flex; }
+  .detail-panel { background:#fff; border-radius:14px; max-width:800px; width:100%; padding:0; overflow:hidden; }
+  .detail-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .detail-head h2 { margin:0; font-size:18px; }
+  .detail-head .close { cursor:pointer; font-size:22px; color:#8a7565; background:none; border:none; }
+  .detail-body { padding:22px; }
+  .info-row { display:flex; gap:24px; margin-bottom:16px; font-size:14px; color:#5a4634; }
+  table.items th, table.items td { padding:8px 10px; font-size:13px; }
+  .total-row { display:flex; justify-content:space-between; padding:14px 0; border-top:2px solid var(--border); margin-top:8px; font-size:16px; font-weight:700; }
+
+  .pay-methods { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:14px 0; }
+  .pay-methods .m { border:1.5px solid var(--border); border-radius:10px; padding:14px 8px; text-align:center; cursor:pointer; font-size:12px; font-weight:600; }
+  .pay-methods .m.selected { border-color:var(--brown); background:#fbf3ea; }
+  .pay-methods .m .ic { font-size:22px; display:block; margin-bottom:6px; }
+
+  textarea { width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-size:13px; font-family:inherit; resize:vertical; min-height:60px; }
+
+  .flow { display:flex; align-items:center; margin-top:22px; overflow-x:auto; padding-top:6px; }
+  .flow .step { display:flex; flex-direction:column; align-items:center; min-width:90px; font-size:11px; color:#b5a692; }
+  .flow .step .dot { width:26px; height:26px; border-radius:50%; border:2px solid #e6d7c5; display:flex; align-items:center; justify-content:center; margin-bottom:6px; background:#fff; }
+  .flow .step.done { color:var(--green); }
+  .flow .step.done .dot { border-color:var(--green); background:var(--green); color:#fff; }
+  .flow .step.current { color:var(--orange); font-weight:700; }
+  .flow .step.current .dot { border-color:var(--orange); }
+  .flow .line { flex:1; height:2px; background:#e6d7c5; min-width:20px; }
+
+  .actions-row { display:flex; gap:10px; margin-top:20px; }
+  .actions-row button { flex:1; padding:11px; border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; }
+  .act-confirm { background:var(--orange); color:#fff; }
+  .act-pay { background:var(--green); color:#fff; }
+  .act-kitchen { background:var(--blue); color:#fff; }
+  .actions-row button:disabled { background:#e6d7c5; color:#b5a692; cursor:not-allowed; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo">☕</span> COFFEE ORDER</div>
+  <nav>
+    <button class="tab-btn active" data-view="dashboard">Dashboard</button>
+    <button class="tab-btn" data-view="orders">Đơn hàng</button>
+  </nav>
+  <div class="user-box">
+    <span id="userLabel"></span>
+    <button onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<main>
+  <!-- ==== DASHBOARD ==== -->
+  <section class="view active" id="view-dashboard">
+    <h2>Dashboard Thu ngân</h2>
+    <div class="stats">
+      <div class="stat-card orange"><div class="label">Chờ xác nhận</div><div class="value" id="statPending">0</div></div>
+      <div class="stat-card blue"><div class="label">Chờ thanh toán</div><div class="value" id="statAwaitingPay">0</div></div>
+      <div class="stat-card green"><div class="label">Đã thanh toán</div><div class="value" id="statPaid">0</div></div>
+      <div class="stat-card purple"><div class="label">Đơn hôm nay</div><div class="value" id="statTotal">0</div></div>
+    </div>
+    <div class="card-box">
+      <div class="card-head">Đơn hàng gần đây</div>
+      <table>
+        <thead><tr><th>Mã đơn</th><th>Bàn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thời gian</th></tr></thead>
+        <tbody id="recentOrdersBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ==== ORDER LIST ==== -->
+  <section class="view" id="view-orders">
+    <h2>Danh sách đơn hàng</h2>
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="Tìm mã đơn, khách hàng, bàn...">
+      <select id="statusFilter">
+        <option value="all">Trạng thái: Tất cả</option>
+        <option value="cho_xac_nhan">Chờ xác nhận</option>
+        <option value="cho_thanh_toan">Chờ thanh toán</option>
+        <option value="da_thanh_toan">Đã thanh toán</option>
+        <option value="chuyen_bep">Chuyển bếp</option>
+      </select>
+      <button class="btn ghost" onclick="renderOrderList()">↻ Làm mới</button>
+    </div>
+    <div class="card-box">
+      <table>
+        <thead><tr><th>Mã đơn</th><th>Bàn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody id="orderListBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- ==== MODAL CHI TIẾT ĐƠN HÀNG ==== -->
+<div class="overlay" id="detailOverlay">
+  <div class="detail-panel">
+    <div class="detail-head">
+      <h2>Chi tiết đơn hàng <span id="detailId" style="color:#8a7565;font-weight:400;"></span></h2>
+      <button class="close" onclick="closeDetail()">×</button>
+    </div>
+    <div class="detail-body">
+      <div class="info-row">
+        <div>🪑 <b id="detailTable"></b></div>
+        <div>👤 <span id="detailCustomer"></span></div>
+      </div>
+      <table class="items">
+        <thead><tr><th>#</th><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+        <tbody id="detailItemsBody"></tbody>
+      </table>
+      <div class="total-row"><span>TỔNG TIỀN</span><span id="detailTotal"></span></div>
+
+      <div id="paymentSection">
+        <label style="font-weight:700;font-size:14px;">Phương thức thanh toán</label>
+        <div class="pay-methods" id="payMethods">
+          <div class="m" data-method="Tiền mặt"><span class="ic">💵</span>Tiền mặt</div>
+          <div class="m" data-method="QR Banking"><span class="ic">📱</span>QR Banking</div>
+          <div class="m" data-method="MoMo"><span class="ic">🟣</span>MoMo</div>
+          <div class="m" data-method="VNPay"><span class="ic">💳</span>VNPay</div>
+        </div>
+      </div>
+
+      <label style="font-weight:700;font-size:14px;">Ghi chú (nếu có)</label>
+      <textarea id="detailNote" placeholder="Nhập ghi chú..."></textarea>
+
+      <div class="flow" id="detailFlow"></div>
+
+      <div class="actions-row">
+        <button class="act-confirm" id="btnConfirm" onclick="doConfirm()">Xác nhận đơn</button>
+        <button class="act-pay" id="btnPay" onclick="doCompletePayment()">Hoàn tất thanh toán</button>
+        <button class="act-kitchen" id="btnKitchen" onclick="doSendKitchen()">Chuyển bếp</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="mock-data.js"></script>
+<script>
+  const session = requireRole('cashier');
+  if (session) document.getElementById('userLabel').textContent = '👤 ' + session.displayName;
+
+  let currentDetailId = null;
+  let selectedPaymentMethod = null;
+
+  // ---- Tab switching ----
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-' + btn.dataset.view).classList.add('active');
+      if (btn.dataset.view === 'dashboard') renderDashboard();
+      if (btn.dataset.view === 'orders') renderOrderList();
+    });
+  });
+
+  // ---- Dashboard ----
+  function renderDashboard() {
+    const orders = getOrders();
+    document.getElementById('statPending').textContent = orders.filter(o => o.status === STATUS.CHO_XAC_NHAN).length;
+    document.getElementById('statAwaitingPay').textContent = orders.filter(o => o.status === STATUS.CHO_THANH_TOAN).length;
+    document.getElementById('statPaid').textContent = orders.filter(o => [STATUS.DA_THANH_TOAN, STATUS.CHUYEN_BEP, STATUS.DANG_PHA_CHE, STATUS.HOAN_THANH].includes(o.status)).length;
+    document.getElementById('statTotal').textContent = orders.length;
+
+    const recent = [...orders].sort((a,b) => b.createdAt - a.createdAt).slice(0,5);
+    document.getElementById('recentOrdersBody').innerHTML = recent.map(o => `
+      <tr>
+        <td><b>#${o.id}</b></td><td>${o.table}</td><td>${o.customer}</td>
+        <td>${formatVND(orderTotal(o))}</td>
+        <td><span class="badge ${o.status}">${STATUS_LABEL[o.status]}</span></td>
+        <td>${timeAgo(o.createdAt)}</td>
+      </tr>`).join('');
+  }
+
+  // ---- Order list ----
+  function renderOrderList() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const filter = document.getElementById('statusFilter').value;
+    let orders = getOrders();
+    if (filter !== 'all') orders = orders.filter(o => o.status === filter);
+    if (search) orders = orders.filter(o =>
+      o.id.toLowerCase().includes(search) || o.customer.toLowerCase().includes(search) || o.table.toLowerCase().includes(search)
+    );
+    orders = orders.sort((a,b) => b.createdAt - a.createdAt);
+
+    document.getElementById('orderListBody').innerHTML = orders.map(o => {
+      const canConfirm = o.status === STATUS.CHO_XAC_NHAN;
+      const canPay = o.status === STATUS.CHO_THANH_TOAN;
+      return `
+      <tr>
+        <td><b>#${o.id}</b></td><td>${o.table}</td><td>${o.customer}</td>
+        <td>${formatVND(orderTotal(o))}</td>
+        <td><span class="badge ${o.status}">${STATUS_LABEL[o.status]}</span></td>
+        <td>
+          <button class="btn ghost" onclick="openDetail('${o.id}')">Xem</button>
+          <button class="btn primary" ${!canConfirm ? 'disabled' : ''} onclick="quickConfirm('${o.id}')">Xác nhận</button>
+          <button class="btn blue" ${!canPay ? 'disabled' : ''} onclick="openDetail('${o.id}')">Thanh toán</button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:#b5a692;padding:24px;">Không có đơn hàng phù hợp</td></tr>';
+  }
+
+  document.getElementById('searchInput').addEventListener('input', renderOrderList);
+  document.getElementById('statusFilter').addEventListener('change', renderOrderList);
+
+  function quickConfirm(id) {
+    updateOrder(id, { status: STATUS.CHO_THANH_TOAN });
+    renderOrderList(); renderDashboard();
+  }
+
+  // ---- Detail modal ----
+  function openDetail(id) {
+    currentDetailId = id;
+    selectedPaymentMethod = null;
+    const o = getOrder(id);
+    document.getElementById('detailId').textContent = '#' + o.id;
+    document.getElementById('detailTable').textContent = o.table;
+    document.getElementById('detailCustomer').textContent = o.customer;
+    document.getElementById('detailNote').value = o.note || '';
+    document.getElementById('detailItemsBody').innerHTML = o.items.map((it, i) => `
+      <tr><td>${i+1}</td><td>${it.name}</td><td>x${it.qty}</td><td>${formatVND(it.price)}</td><td>${formatVND(it.qty*it.price)}</td></tr>
+    `).join('');
+    document.getElementById('detailTotal').textContent = formatVND(orderTotal(o));
+
+    document.querySelectorAll('.pay-methods .m').forEach(m => {
+      m.classList.toggle('selected', o.paymentMethod === m.dataset.method);
+      m.onclick = () => {
+        selectedPaymentMethod = m.dataset.method;
+        document.querySelectorAll('.pay-methods .m').forEach(x => x.classList.remove('selected'));
+        m.classList.add('selected');
+      };
+    });
+    document.getElementById('paymentSection').style.display = (o.status === STATUS.CHO_THANH_TOAN) ? 'block' : (o.paymentMethod ? 'block' : 'none');
+
+    renderFlow(o.status);
+    renderActionButtons(o.status);
+    document.getElementById('detailOverlay').classList.add('active');
+  }
+
+  function closeDetail() { document.getElementById('detailOverlay').classList.remove('active'); currentDetailId = null; }
+
+  function renderFlow(status) {
+    const idx = STATUS_FLOW.indexOf(status === STATUS.CHO_THANH_TOAN ? STATUS.CHO_THANH_TOAN : status);
+    const flowSteps = [STATUS.CHO_XAC_NHAN, STATUS.DA_XAC_NHAN, STATUS.CHO_THANH_TOAN, STATUS.DA_THANH_TOAN, STATUS.CHUYEN_BEP];
+    // "đã xác nhận" và "chờ thanh toán" xảy ra cùng lúc khi bấm Xác nhận -> coi idx của cho_thanh_toan bao hàm da_xac_nhan
+    let effectiveIdx = flowSteps.indexOf(status);
+    if (status === STATUS.CHO_THANH_TOAN) effectiveIdx = 2; // đã qua cả đã xác nhận
+
+    document.getElementById('detailFlow').innerHTML = flowSteps.map((s, i) => {
+      const cls = i < effectiveIdx ? 'done' : (i === effectiveIdx ? 'current' : '');
+      const html = `<div class="step ${cls}"><div class="dot">${i < effectiveIdx ? '✓' : (i+1)}</div>${STATUS_LABEL[s]}</div>`;
+      return i < flowSteps.length - 1 ? html + '<div class="line"></div>' : html;
+    }).join('');
+  }
+
+  function renderActionButtons(status) {
+    document.getElementById('btnConfirm').disabled = status !== STATUS.CHO_XAC_NHAN;
+    document.getElementById('btnPay').disabled = status !== STATUS.CHO_THANH_TOAN;
+    document.getElementById('btnKitchen').disabled = status !== STATUS.DA_THANH_TOAN;
+  }
+
+  function doConfirm() {
+    if (!currentDetailId) return;
+    updateOrder(currentDetailId, { status: STATUS.CHO_THANH_TOAN, note: document.getElementById('detailNote').value });
+    openDetail(currentDetailId);
+    renderOrderList(); renderDashboard();
+  }
+
+  function doCompletePayment() {
+    if (!currentDetailId) return;
+    if (!selectedPaymentMethod) { alert('Vui lòng chọn phương thức thanh toán trước.'); return; }
+    updateOrder(currentDetailId, { status: STATUS.DA_THANH_TOAN, paymentMethod: selectedPaymentMethod, note: document.getElementById('detailNote').value });
+    openDetail(currentDetailId);
+    renderOrderList(); renderDashboard();
+  }
+
+  function doSendKitchen() {
+    if (!currentDetailId) return;
+    // Đơn được chuyển sang màn hình Pha chế tại đây
+    updateOrder(currentDetailId, { status: STATUS.CHUYEN_BEP });
+    closeDetail();
+    renderOrderList(); renderDashboard();
+  }
+
+  // ---- Init & live sync ----
+  onOrdersChanged(() => { renderDashboard(); renderOrderList(); });
+  renderDashboard();
+  renderOrderList();
+</script>
+</body>
+</html>

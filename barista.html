@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pha Chế - Coffee Order</title>
+<style>
+  :root {
+    --brown:#6b4423; --brown-dark:#4a2f18; --cream:#f7ede1; --accent:#c9822f;
+    --orange:#e67e22; --purple:#8e44ad; --green:#27ae60; --border:#e6d7c5;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Segoe UI',Roboto,sans-serif; background:var(--cream); color:var(--brown-dark); }
+  header {
+    background:#fff; border-bottom:1px solid var(--border); padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; position:sticky; top:0;
+  }
+  header .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; }
+  .user-box { display:flex; align-items:center; gap:10px; font-size:13px; color:#8a7565; }
+  .user-box button { background:none; border:1px solid var(--border); border-radius:6px; padding:6px 12px; cursor:pointer; color:var(--brown-dark); }
+  main { padding:24px; max-width:1100px; margin:0 auto; }
+  h2 { margin-top:0; }
+  .columns { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .col-head { display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:12px; font-size:15px; }
+  .col-head .count { background:var(--orange); color:#fff; border-radius:20px; padding:1px 9px; font-size:12px; }
+  .col-head.making .count { background:var(--purple); }
+
+  .order-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+  .order-card .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .order-card .table-badge { background:#faf4ec; padding:4px 10px; border-radius:8px; font-weight:700; font-size:13px; }
+  .order-card .order-id { color:#8a7565; font-size:12px; }
+  .order-card ul { margin:0; padding-left:18px; font-size:14px; line-height:1.7; }
+  .order-card .note { margin-top:8px; font-size:12px; color:var(--accent); background:#fdf3e3; padding:6px 10px; border-radius:6px; }
+  .order-card button { width:100%; margin-top:14px; padding:10px; border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; }
+  .btn-start { background:var(--orange); color:#fff; }
+  .btn-done { background:var(--green); color:#fff; }
+  .empty { text-align:center; color:#b5a692; padding:30px 10px; font-size:14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">☕ COFFEE ORDER — Pha chế</div>
+  <div class="user-box">
+    <span id="userLabel"></span>
+    <button onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<main>
+  <h2>Màn hình Pha chế</h2>
+  <div class="columns">
+    <div>
+      <div class="col-head">🍵 Đơn chờ pha chế <span class="count" id="countWaiting">0</span></div>
+      <div id="waitingList"></div>
+    </div>
+    <div>
+      <div class="col-head making">🔥 Đang pha chế <span class="count" id="countMaking">0</span></div>
+      <div id="makingList"></div>
+    </div>
+  </div>
+</main>
+
+<script src="mock-data.js"></script>
+<script>
+  const session = requireRole('barista');
+  if (session) document.getElementById('userLabel').textContent = '👤 ' + session.displayName;
+
+  function orderCard(o, actionHtml) {
+    return `
+    <div class="order-card">
+      <div class="top">
+        <span class="table-badge">🪑 ${o.table}</span>
+        <span class="order-id">#${o.id}</span>
+      </div>
+      <ul>${o.items.map(it => `<li>${it.name} <b>x${it.qty}</b></li>`).join('')}</ul>
+      ${o.note ? `<div class="note">📝 ${o.note}</div>` : ''}
+      ${actionHtml}
+    </div>`;
+  }
+
+  function render() {
+    const orders = getOrders();
+    const waiting = orders.filter(o => o.status === STATUS.CHUYEN_BEP).sort((a,b)=>a.createdAt-b.createdAt);
+    const making = orders.filter(o => o.status === STATUS.DANG_PHA_CHE).sort((a,b)=>a.createdAt-b.createdAt);
+
+    document.getElementById('countWaiting').textContent = waiting.length;
+    document.getElementById('countMaking').textContent = making.length;
+
+    document.getElementById('waitingList').innerHTML = waiting.length
+      ? waiting.map(o => orderCard(o, `<button class="btn-start" onclick="startBrewing('${o.id}')">▶ Bắt đầu pha chế</button>`)).join('')
+      : '<div class="empty">Chưa có đơn nào cần pha chế</div>';
+
+    document.getElementById('makingList').innerHTML = making.length
+      ? making.map(o => orderCard(o, `<button class="btn-done" onclick="finishBrewing('${o.id}')">✓ Hoàn thành</button>`)).join('')
+      : '<div class="empty">Không có đơn nào đang pha chế</div>';
+  }
+
+  function startBrewing(id) {
+    updateOrder(id, { status: STATUS.DANG_PHA_CHE });
+    render();
+  }
+
+  function finishBrewing(id) {
+    // Cập nhật trạng thái để khách hàng thấy "Mời bạn đến quầy nhận nước"
+    updateOrder(id, { status: STATUS.HOAN_THANH });
+    render();
+  }
+
+  onOrdersChanged(render);
+  render();
+</script>
+</body>
+</html>
